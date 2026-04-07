@@ -4,49 +4,43 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DAPS 2026</title>
-<script src="https://unpkg.com/html5-qrcode"></script>
 
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/html5-qrcode"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 
 <style>
-:root {
-    --primary: #1f2d3d;
-    --accent: #4f46e5;
-    --success: #16a34a;
-    --error: #dc2626;
-}
-
 body {
     margin: 0;
-    font-family: 'Poppins', sans-serif;
-    background: linear-gradient(135deg, #e0e7ff, #f8fafc);
+    font-family: 'Inter', sans-serif;
+    background: #f1f5f9;
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
 }
 
-/* CARD */
-.card {
+/* CONTAINER */
+.app {
     width: 100%;
-    max-width: 420px;
+    max-width: 380px;
     background: white;
-    border-radius: 20px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    border-radius: 18px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.08);
     overflow: hidden;
 }
 
 /* HEADER */
 .header {
-    padding: 25px;
     text-align: center;
-    background: linear-gradient(135deg, #4f46e5, #6366f1);
-    color: white;
+    padding: 20px;
+    font-weight: 600;
+    font-size: 18px;
+    border-bottom: 1px solid #eee;
 }
 
 /* LOGIN */
-.login-box {
-    padding: 30px;
+.login {
+    padding: 25px;
     text-align: center;
 }
 
@@ -56,6 +50,7 @@ input {
     border-radius: 10px;
     border: 1px solid #ddd;
     margin-bottom: 15px;
+    font-size: 14px;
 }
 
 button {
@@ -63,96 +58,71 @@ button {
     padding: 12px;
     border-radius: 10px;
     border: none;
-    background: var(--accent);
+    background: #2563eb;
     color: white;
     font-weight: 600;
+    cursor: pointer;
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+/* LOADING */
+.loading {
+    font-size: 13px;
+    color: #64748b;
 }
 
 /* CAMERA */
-.camera-container {
-    background: black;
-    position: relative;
-}
-
 #reader {
     width: 100%;
 }
 
-/* SCAN LINE */
-.scan-line {
-    height: 2px;
-    background: red;
-    position: absolute;
-    width: 100%;
-    animation: scan 2s linear infinite;
-}
-
-@keyframes scan {
-    0% { top: 0; }
-    100% { top: 100%; }
-}
-
 /* STATUS */
-.footer {
-    padding: 20px;
+.status {
     text-align: center;
+    padding: 15px;
+    font-size: 14px;
+    color: #64748b;
 }
 
-/* NOTIFICATION */
-.toast {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: #16a34a;
-    color: white;
-    padding: 15px 20px;
-    border-radius: 10px;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-    opacity: 0;
-    transform: translateY(-20px);
-    transition: 0.4s;
-    font-weight: 500;
+/* SUCCESS */
+.success {
+    color: #16a34a;
+    font-weight: 600;
 }
 
-.toast.show {
-    opacity: 1;
-    transform: translateY(0);
+/* ERROR */
+.error {
+    color: #dc2626;
+    font-weight: 600;
 }
 </style>
 </head>
 
 <body>
 
-<!-- 🔔 NOTIF -->
-<div id="toast" class="toast"></div>
+<div class="app">
 
-<!-- 🔐 LOGIN -->
-<div id="login-card" class="card">
-    <div class="header">
-        <h2>DAPS 2026</h2>
-    </div>
+<!-- LOGIN -->
+<div id="login-box">
+    <div class="header">DAPS 2026</div>
 
-    <div class="login-box">
-        <input type="text" id="kode" placeholder="Masukkan Kode Akses">
+    <div class="login">
+        <input type="text" id="kode" placeholder="Kode akses">
         <button onclick="login()">Masuk</button>
-        <p id="login-status"></p>
+        <div id="login-status" class="loading"></div>
     </div>
 </div>
 
-<!-- 📷 APP -->
-<div id="app-card" class="card" style="display:none;">
-    <div class="header">
-        <h2>DAPS 2026</h2>
-    </div>
+<!-- SCANNER -->
+<div id="app-box" style="display:none;">
+    <div class="header">Scan Barcode</div>
+    <div id="reader"></div>
+    <div id="status-text" class="status">Siap memindai...</div>
+</div>
 
-    <div class="camera-container">
-        <div id="reader"></div>
-        <div class="scan-line"></div>
-    </div>
-
-    <div class="footer">
-        <div id="status-text">Siap memindai...</div>
-    </div>
 </div>
 
 <script>
@@ -160,30 +130,24 @@ const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxdol6Bk2Ciq4f-VHA5
 
 let isScanning = true;
 
-// 🔊 BEEP SOUND
+// 🔊 BEEP
 const beep = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
 
-// 🔔 TOAST
-function showToast(text) {
-    const toast = document.getElementById("toast");
-    toast.innerText = text;
-    toast.classList.add("show");
-
-    setTimeout(() => {
-        toast.classList.remove("show");
-    }, 2000);
-}
-
-// LOGIN
+// LOGIN (DIPERCEPAT UX)
 function login() {
     const kode = document.getElementById("kode").value;
     const status = document.getElementById("login-status");
 
-    status.innerText = "Memeriksa...";
+    if (!kode) {
+        status.innerText = "Masukkan kode!";
+        return;
+    }
+
+    status.innerText = "Memeriksa akses...";
 
     fetch(WEB_APP_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {"Content-Type": "application/json"},
         body: JSON.stringify({ type: "login", kode: kode })
     })
     .then(res => res.json())
@@ -193,14 +157,19 @@ function login() {
             status.style.color = "green";
 
             setTimeout(() => {
-                document.getElementById("login-card").style.display = "none";
-                document.getElementById("app-card").style.display = "block";
+                document.getElementById("login-box").style.display = "none";
+                document.getElementById("app-box").style.display = "block";
                 startScanner();
-            }, 500);
+            }, 300);
+
         } else {
             status.innerText = "Akses ditolak!";
             status.style.color = "red";
         }
+    })
+    .catch(() => {
+        status.innerText = "Koneksi bermasalah";
+        status.style.color = "red";
     });
 }
 
@@ -212,34 +181,31 @@ function startScanner() {
         if (!isScanning) return;
 
         isScanning = false;
-        statusText.innerText = "Memproses: " + decodedText;
+        statusText.innerText = "Memproses...";
+        statusText.className = "status";
 
         fetch(WEB_APP_URL, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {"Content-Type": "application/json"},
             body: JSON.stringify({ type: "scan", nama: decodedText })
         })
         .then(res => res.json())
         .then(() => {
 
-            // 🔊 BEEP
             beep.play();
 
-            // 🔔 NOTIF
-            showToast("✔ Berhasil: " + decodedText);
-
-            statusText.innerText = "Berhasil disimpan";
-            statusText.style.color = "green";
+            statusText.innerText = "✔ Berhasil: " + decodedText;
+            statusText.className = "status success";
 
             setTimeout(() => {
                 statusText.innerText = "Siap memindai...";
-                statusText.style.color = "#64748b";
+                statusText.className = "status";
                 isScanning = true;
-            }, 1500);
+            }, 1200);
         })
         .catch(() => {
-            statusText.innerText = "Gagal!";
-            statusText.style.color = "red";
+            statusText.innerText = "Gagal kirim!";
+            statusText.className = "status error";
             setTimeout(() => { isScanning = true; }, 2000);
         });
     }
@@ -248,7 +214,7 @@ function startScanner() {
 
     html5QrCode.start(
         { facingMode: "environment" },
-        { fps: 20, qrbox: 250 },
+        { fps: 15, qrbox: 230 },
         onScanSuccess
     );
 }
